@@ -1,33 +1,48 @@
 var express = require("express");
 var app = express();
 var bodyParser = require("body-parser");
+var mongoose = require("mongoose");
 
+mongoose.connect("mongodb://localhost/campfire");
 app.use(bodyParser.urlencoded({extended: true}));
 app.set("view engine", "ejs");
 
-var campgrounds = [
-	{name: "Blackwoods", image: "https://i.pinimg.com/originals/0d/c0/c2/0dc0c258e19e724a469716a0acc0d033.jpg"},
-	{name: "Cape Lookout", image: "https://www.jeffreysincich.com/uploads/9/5/8/5/9585103/5385993_orig.jpg?314"},
-	{name: "Dog layer", image: "https://www.campsitephotos.com/photo/camp/72617/Elk_Prairie_072.jpg"}
-];
+// Schema setup
+var campgroundSchema = new mongoose.Schema({
+	name: String,
+	image: String
+});
+
+var Campground = mongoose.model("Campground", campgroundSchema);
 
 app.get("/", function(req, res) {
 	res.render("home");
 });
 
 app.get("/campgrounds", function(req, res) {
-	res.render("campgrounds", {campgrounds: campgrounds});
+	// get all campgrounds from db
+	Campground.find({}, function(err, campgrounds) {
+		if(err) {
+			console.log(err);
+		} else {
+			res.render("campgrounds", {campgrounds: campgrounds});
+		}
+	});
 });
 
 app.post("/campgrounds", function(req, res) {
 	// get data from form
 	var name = req.body.name;
 	var image = req.body.image;
-	var newCampground = {name: name, image: image}
-	// add to campgrounds array
-	campgrounds.push(newCampground);
-	// redirect to campgrounds page
-	res.redirect("/campgrounds");
+	var newCampground = {name: name, image: image};
+	// create a new campground and save to database
+	Campground.create(newCampground, function(err, campground) {
+		if(err) {
+			console.log(err);
+		} else {
+			res.redirect("/campgrounds");
+		}
+	});
 });
 
 app.get("/campgrounds/new", function(req, res) {
